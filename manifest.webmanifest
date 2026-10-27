@@ -1,0 +1,11 @@
+{
+  "name": "FocusFlow Study Planner",
+  "short_name": "FocusFlow",
+  "description": "A private, browser-based space to plan study, revisions, exams, and goals.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f5fb",
+  "theme_color": "#f3f5fb",
+  "icons": [{ "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

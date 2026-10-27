@@ -1,0 +1,20 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const DPromise=import('../domain.js');
+const fixed=()=>Date.parse('2026-10-27T12:00:00Z');
+
+test('task creation validates title and normalizes user input',async()=>{const D=await DPromise;const tasks=[];assert.throws(()=>D.createTask(tasks,{title:'   '}),/title/i);assert.throws(()=>D.createTask(tasks,{title:'Invalid date',dueDate:'tomorrow'}),/date/i);const t=D.createTask(tasks,{title:'  Read chapter  ',subject:' Biology ',priority:'high',estimate:5000},()=> 'task-1',fixed);assert.equal(t.title,'Read chapter');assert.equal(t.subject,'Biology');assert.equal(t.estimate,1440);assert.equal(tasks[0].id,'task-1')});
+
+test('task edit preserves completion state; complete and reopen update the record',async()=>{const D=await DPromise;const tasks=[{id:'a',title:'Draft',priority:'medium',completed:false,createdAt:1}];D.updateTask(tasks,'a',{title:'Final draft',priority:'high',estimate:30});D.toggleTask(tasks,'a',true,99);assert.equal(tasks[0].title,'Final draft');assert.equal(tasks[0].completed,true);D.updateTask(tasks,'a',{title:'Final draft v2',priority:'low'});assert.equal(tasks[0].completed,true);D.toggleTask(tasks,'a',false);assert.equal(tasks[0].completed,false)});
+
+test('dashboard counts overdue only for pending tasks and calculates progress',async()=>{const D=await DPromise;const tasks=[{title:'late',dueDate:'2026-10-26',completed:false},{title:'done',dueDate:'2026-10-25',completed:true},{title:'future',dueDate:'2026-11-01',completed:false}];assert.deepEqual(D.taskStats(tasks,'2026-10-27'),{total:3,completed:1,pending:2,overdue:1,percent:33})});
+
+test('search, status, priority, subject, due date, and sorting compose',async()=>{const D=await DPromise;const tasks=[{id:'1',title:'Physics lab',priority:'high',subject:'Physics',dueDate:'2026-10-29',createdAt:3,completed:false},{id:'2',title:'History notes',priority:'low',subject:'History',dueDate:'2026-11-20',createdAt:5,completed:false},{id:'3',title:'Physics exam review',priority:'high',subject:'Physics',dueDate:'2026-10-20',createdAt:4,completed:true}];const result=D.filterTasks(tasks,{query:'physics',status:'pending',priority:'high',subject:'Physics',due:'upcoming',today:'2026-10-27'});assert.deepEqual(result.map(x=>x.id),['1']);assert.deepEqual(D.filterTasks(tasks,{status:'all',priority:'all',subject:'all',due:'all',sort:'priority',today:'2026-10-27'}).map(x=>x.id),['1','3','2']);assert.deepEqual(D.filterTasks(tasks,{status:'overdue',today:'2026-10-27'}).map(x=>x.id),[])});
+
+test('deleting a task removes only the requested record',async()=>{const D=await DPromise;const tasks=[{id:'a',title:'Keep'},{id:'b',title:'Remove'}];assert.equal(D.deleteTask(tasks,'b').title,'Remove');assert.equal(tasks.length,1);assert.equal(D.deleteTask(tasks,'missing'),null)});
+
+test('revision intervals extend and timetable reports overlapping sessions',async()=>{const D=await DPromise;let r={step:0};const intervals=[];for(let i=0;i<5;i++){const next=D.nextReview(r);r={...r,...next};intervals.push(r.interval)}assert.deepEqual(intervals,[3,7,14,30,30]);const sessions=[{id:'one',date:'2026-10-28',time:'09:00',duration:45,break:10,subject:'Math'}];assert.equal(D.scheduleConflicts(sessions,{date:'2026-10-28',time:'09:30',duration:30}).length,1);assert.equal(D.scheduleConflicts(sessions,{date:'2026-10-28',time:'10:00',duration:30}).length,0)});
+
+test('static app uses relative ESM/PWA assets and local data modules',()=>{const root=path.join(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8'),app=fs.readFileSync(path.join(root,'app.js'),'utf8'),sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');assert.match(html,/<script type="module" src="\.\/app\.js"><\/script>/);assert.match(html,/manifest\.webmanifest/);assert.match(app,/from '\.\/storage\.js'/);assert.match(app,/register\('\.\/sw\.js'/);assert.match(sw,/focusflow-shell-v1/);assert.doesNotMatch(html,/localhost|127\.0\.0\.1/)});

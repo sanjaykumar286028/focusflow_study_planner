@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f5fb">
+  <meta name="description" content="Plan study sessions, syllabus progress, revisions, exams, and goals in one private study space.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <title>FocusFlow — Study Planner</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#dashboard" aria-label="FocusFlow dashboard"><span class="brand-mark">✳</span><span>focusflow</span></a>
+      <div class="workspace-label">STUDY SPACE</div>
+      <nav class="primary-nav" aria-label="Main navigation">
+        <button class="nav-link active" data-page="dashboard"><span>◫</span>Dashboard</button>
+        <button class="nav-link" data-page="timetable"><span>▦</span>Timetable</button>
+        <button class="nav-link" data-page="focus"><span>◷</span>Focus timer</button>
+        <button class="nav-link" data-page="tasks"><span>✓</span>Tasks & homework</button>
+        <button class="nav-link" data-page="revisions"><span>↻</span>Revision planner</button>
+        <button class="nav-link" data-page="syllabus"><span>▤</span>Syllabus</button>
+        <button class="nav-link" data-page="exams"><span>⌁</span>Exams</button>
+        <button class="nav-link" data-page="notes"><span>▧</span>Notes</button>
+        <button class="nav-link" data-page="analytics"><span>▥</span>Progress</button>
+        <button class="nav-link" data-page="goals"><span>✧</span>Goals & habits</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="nav-link coach-link" data-page="assistant"><span>✦</span>Study coach <span class="offline-pill">OFFLINE</span></button>
+        <button class="nav-link" data-page="settings"><span>⚙</span>Settings</button>
+        <div class="privacy-card"><span class="privacy-dot"></span><div><strong>Private by default</strong><small>Your data stays in this browser</small></div></div>
+        <div class="sidebar-foot">FOCUSFLOW · LOCAL EDITION</div>
+      </div>
+    </aside>
+    <main class="main-area">
+      <header class="topbar">
+        <button class="mobile-menu icon-button" id="mobile-menu" aria-label="Toggle navigation">☰</button>
+        <div class="breadcrumb"><span>FocusFlow</span><b>/</b><strong id="current-page-label">Dashboard</strong></div>
+        <div class="topbar-actions"><span class="today-chip" id="today-chip"></span><span class="network-chip" id="network-status" role="status">Checking…</span><button class="icon-button theme-button" id="theme-toggle" type="button" aria-label="Switch to dark theme" title="Toggle theme">◐</button><button class="avatar" id="profile-avatar" data-page="settings" aria-label="Open settings">S</button></div>
+      </header>
+      <div class="page-wrap" id="page-view" tabindex="-1" aria-busy="true"><p class="row-subtitle">Loading your study space…</p></div>
+      <footer class="app-footer"><span>✳ FocusFlow</span><span>Plans and notes are stored on this device. Nothing syncs automatically.</span></footer>
+    </main>
+  </div>
+  <nav class="mobile-nav" aria-label="Quick navigation">
+    <button class="mobile-nav-link active" data-page="dashboard"><span>◫</span>Home</button><button class="mobile-nav-link" data-page="timetable"><span>▦</span>Plan</button><button class="mobile-nav-link" data-page="focus"><span>◷</span>Focus</button><button class="mobile-nav-link" data-page="tasks"><span>✓</span>Tasks</button><button class="mobile-nav-link" data-page="more"><span>•••</span>More</button>
+  </nav>
+  <dialog id="modal" class="modal" aria-labelledby="modal-title"><form id="modal-form" novalidate><div class="modal-head"><div><span class="eyebrow" id="modal-eyebrow">FOCUSFLOW</span><h2 id="modal-title">Add item</h2></div><button class="icon-button" type="button" data-action="close-modal" aria-label="Close">×</button></div><div id="modal-fields"></div><div class="modal-error" id="modal-error" role="status" aria-live="polite"></div><div class="modal-actions"><button class="button button-quiet" type="button" data-action="close-modal">Cancel</button><button class="button button-primary" type="submit" id="modal-submit">Save</button></div></form></dialog>
+  <dialog id="more-dialog" class="modal more-modal" aria-label="More sections"><div class="modal-head"><h2>More in FocusFlow</h2><button class="icon-button" type="button" data-action="close-more" aria-label="Close">×</button></div><div class="more-links"><button data-page="revisions">↻ Revision planner</button><button data-page="syllabus">▤ Syllabus</button><button data-page="exams">⌁ Exams</button><button data-page="notes">▧ Notes</button><button data-page="analytics">▥ Progress</button><button data-page="goals">✧ Goals & habits</button><button data-page="assistant">✦ Study coach</button><button data-page="settings">⚙ Settings</button></div></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

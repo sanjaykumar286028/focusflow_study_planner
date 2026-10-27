@@ -1,0 +1,27 @@
+# Local secrets and configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# User data, exports, and local backups
+*.backup
+*.bak
+*.log
+focusflow-backup-*.json
+
+# Dependencies and generated output
+node_modules/
+dist/
+build/
+coverage/
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
