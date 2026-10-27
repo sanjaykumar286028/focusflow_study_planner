@@ -1,4 +1,5 @@
-# FocusFlow Study Planner
+# focusflow_study_planner
+Lightweight browser-based Study Planner
 
 FocusFlow is a browser-based, local-first study planner built with vanilla HTML, CSS, and JavaScript ES modules. It needs no account, server-side database, API key, build step, or paid service. Your planner records stay in the browser profile on the device where you use the app.
 
