@@ -37,13 +37,15 @@ node --test tests/smoke.test.cjs
 
 ## Data, privacy, and backup
 
-IndexedDB is the primary store; LocalStorage is used as a fallback and for small preferences. A prior FocusFlow task list is migrated on first load. Data stays in the current browser profile and does not sync across browsers or devices. Clearing site data, using a different browser profile/device, or uninstalling may remove it. Export a JSON backup regularly. Import replaces the current planner data after confirmation.
+IndexedDB is the primary store; LocalStorage is used as a fallback and for small preferences. A prior FocusFlow task list is migrated on first load. Data stays in the current browser profile and does not sync across browsers or devices. Browser storage is not encrypted. GitHub Pages project sites under one `github.io` host share a browser origin, so another Pages project on the same account could access this site's browser storage. Avoid entering highly sensitive personal information. Clearing site data, using a different browser profile/device, or uninstalling may remove it. Export a JSON backup regularly. Import replaces the current planner data after validation and confirmation.
 
 The service worker caches the static application shell so it can reopen offline after its first successful online load. It does not cache planner records or provide cloud backup/synchronization. Notification and wake-lock support depend on browser permission and platform behavior. Interface text is currently English; the language preference is saved for future use but does not translate the interface yet.
 
 ## Static HTTPS deployment
 
 The app uses relative asset paths and can be served from a static host, including GitHub Pages. It needs no server-side routes. To deploy, place these project files in an authorized GitHub repository and enable Pages for the chosen branch/folder (or configure the repository’s Pages workflow). A custom domain and public visibility settings are controlled by the repository owner. After publishing, open the HTTPS Pages URL once to install the service worker, then verify a reload and an offline reopen. No public URL exists until a repository is selected and the deployment reports success.
+
+For Cloudflare Pages Git integration, connect this GitHub repository, choose `main` as the production branch, set the build command to `npm run build`, and set the build output directory to `dist`. The build stages only the static application files; no framework or environment variables are required.
 
 ## Project files
 

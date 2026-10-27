@@ -31,10 +31,12 @@ jobs:
           node-version: 24
       - name: Run smoke tests
         run: node --test tests/smoke.test.cjs
+      - name: Build static application
+        run: npm run build
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: dist
       - name: Publish to Pages
         id: deployment
         uses: actions/deploy-pages@v4
