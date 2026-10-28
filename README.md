@@ -1,7 +1,7 @@
 # focusflow_study_planner
 Lightweight browser-based Study Planner
 
-FocusFlow is a browser-based, local-first study planner built with vanilla HTML, CSS, and JavaScript ES modules. It needs no account, server-side database, API key, build step, or paid service. Your planner records stay in the browser profile on the device where you use the app.
+FocusFlow is a browser-based, local-first study planner built with vanilla HTML, CSS, and JavaScript ES modules. The planner works without an account or remote service. Optional manual cloud sync can be configured with Supabase; it is not enabled until you provide a project URL/public key, apply the database migration, and sign in.
 
 ## Run locally
 
@@ -16,7 +16,7 @@ Open `http://127.0.0.1:8001/`. Keep the terminal open while using the app; press
 Run the requested automated checks with:
 
 ```powershell
-node --test tests/smoke.test.cjs
+node --test tests/*.test.cjs
 ```
 
 ## Features
@@ -37,9 +37,13 @@ node --test tests/smoke.test.cjs
 
 ## Data, privacy, and backup
 
-IndexedDB is the primary store; LocalStorage is used as a fallback and for small preferences. A prior FocusFlow task list is migrated on first load. Data stays in the current browser profile and does not sync across browsers or devices. Browser storage is not encrypted. GitHub Pages project sites under one `github.io` host share a browser origin, so another Pages project on the same account could access this site's browser storage. Avoid entering highly sensitive personal information. Clearing site data, using a different browser profile/device, or uninstalling may remove it. Export a JSON backup regularly. Import replaces the current planner data after validation and confirmation.
+IndexedDB is the primary store; LocalStorage is used as a fallback and for small preferences. A prior FocusFlow task list is migrated on first load. By default, data stays in the current browser profile. Browser storage is not encrypted. GitHub Pages project sites under one `github.io` host share a browser origin, so a script on another project site under that host could access this site's browser storage. The app warns on GitHub Pages and disables cloud sign-in there; use the separate Cloudflare Pages origin for optional cloud sync. Avoid entering highly sensitive information on the shared `github.io` origin. Clearing site data, using a different browser profile/device, or uninstalling may remove local data. Export a JSON backup regularly. Import replaces the current planner data after validation and confirmation.
 
-The service worker caches the static application shell so it can reopen offline after its first successful online load. It does not cache planner records or provide cloud backup/synchronization. Notification and wake-lock support depend on browser permission and platform behavior. Interface text is currently English; the language preference is saved for future use but does not translate the interface yet.
+The service worker caches the static application shell so it can reopen offline after its first successful online load. It does not cache planner records. Cloud sync is explicit and manual; local work remains available offline, while authentication and sync require a network connection. Notification and wake-lock support depend on browser permission and platform behavior. Interface text is currently English; the language preference is saved for future use but does not translate the interface yet.
+
+## Optional cloud sync
+
+Cloud sync uses Supabase Auth and a Postgres row protected by row-level security. The app uploads the complete planner only after you review the local and cloud copies and choose an action. Before a download or overwrite, it downloads a recovery JSON file. Revision checks prevent two devices from silently overwriting a newer cloud copy. See [docs/cloud-sync.md](docs/cloud-sync.md) for setup, free-plan limits, deletion, privacy, and recovery details. Cloud sync is not configured in the published project until an owner creates the Supabase project, applies the migration, and uses the settings form.
 
 ## Static HTTPS deployment
 

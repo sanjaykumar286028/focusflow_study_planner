@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f3f5fb">
   <meta name="description" content="Plan study sessions, syllabus progress, revisions, exams, and goals in a browser-based study space.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; manifest-src 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.supabase.co; font-src 'self'; manifest-src 'self'; form-action 'self'">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
@@ -43,7 +43,7 @@
         </section>
       </nav>
       <div class="sidebar-bottom">
-        <div class="privacy-card"><span class="privacy-dot"></span><div><strong>Stored on this device</strong><small>No account or cloud sync</small></div></div>
+        <div class="privacy-card"><span class="privacy-dot"></span><div><strong>Local-first planner</strong><small>Cloud sync is optional</small></div></div>
         <div class="sidebar-foot">FOCUSFLOW · LOCAL EDITION</div>
       </div>
     </aside>
@@ -53,6 +53,10 @@
         <div class="breadcrumb"><span>FocusFlow</span><b>/</b><strong id="current-page-label">Dashboard</strong></div>
         <div class="topbar-actions"><span class="today-chip" id="today-chip"></span><span class="network-chip" id="network-status" role="status" hidden></span><button class="icon-button theme-button" id="theme-toggle" type="button" aria-label="Switch to dark theme" title="Toggle theme">◐</button></div>
       </header>
+      <aside id="github-origin-warning" class="origin-warning" role="note" hidden>
+        GitHub Pages project sites on the same account host share browser storage. For a separate site origin, use
+        <a href="https://focusflow-study-planner.pages.dev/" target="_blank" rel="noopener noreferrer">FocusFlow on Cloudflare Pages</a>.
+      </aside>
       <div class="page-wrap" id="page-view" tabindex="-1" aria-busy="true"><p class="row-subtitle">Loading your study space…</p></div>
       <footer class="app-footer"><span>✳ FocusFlow</span><span>Plans and notes are stored on this device. Nothing syncs automatically.</span></footer>
     </main>

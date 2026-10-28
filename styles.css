@@ -410,3 +410,12 @@ textarea:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+.origin-warning { margin: 14px 40px 0; padding: 11px 14px; border: 1px solid var(--amber); border-radius: 10px; color: var(--text); background: var(--amber-bg); font-size: 12px; }
+.origin-warning[hidden] { display: none; }
+.origin-warning a { color: var(--text); font-weight: 700; text-underline-offset: 2px; }
+.sync-form { display: grid; gap: 12px; }
+.sync-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.sync-warning { padding: 10px 12px; border-left: 3px solid var(--amber); background: var(--amber-bg); border-radius: 7px; }
+.sync-state { min-height: 24px; margin: 8px 0; }
+@media (max-width: 640px) { .origin-warning { margin: 10px 15px 0; } }

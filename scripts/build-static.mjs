@@ -6,7 +6,7 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const output = join(root, 'dist');
 const files = [
   'index.html', 'styles.css', 'app.js', 'backup.js', 'domain.js',
-  'storage.js', 'sw.js', 'manifest.webmanifest', 'icon.svg', '.nojekyll',
+  'storage.js', 'sync.js', 'sw.js', 'manifest.webmanifest', 'icon.svg', '.nojekyll',
 ];
 
 await mkdir(output, { recursive: true });
