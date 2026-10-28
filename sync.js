@@ -1,7 +1,10 @@
 const CONFIG_KEY = 'focusflow.sync.config.v1';
 const SESSION_KEY = 'focusflow.sync.session.v1';
 const LAST_SYNC_KEY = 'focusflow.sync.last-success.v1';
+const AUTO_SYNC_KEY = 'focusflow.sync.automatic.v1';
+const SYNC_CURSOR_KEY = 'focusflow.sync.cursor.v1';
 const MAX_SYNC_BYTES = 4 * 1024 * 1024;
+const pendingControllers = new Set();
 
 function storage(name) {
   try { return globalThis[name] || null; } catch { return null; }
@@ -41,15 +44,75 @@ export function saveSyncConfig(value) {
   const config = validateSyncConfig(value);
   const target = storage('localStorage');
   if (!target) throw Error('Browser storage is unavailable.');
+  const previous = loadSyncConfig();
   target.setItem(CONFIG_KEY, JSON.stringify(config));
+  if (previous && previous.url !== config.url) {
+    target.removeItem(AUTO_SYNC_KEY);
+    target.removeItem(SYNC_CURSOR_KEY);
+    target.removeItem(LAST_SYNC_KEY);
+  }
   return config;
+}
+
+export function automaticSyncEnabled(userId) {
+  const config = loadSyncConfig();
+  try {
+    const saved = JSON.parse(storage('localStorage')?.getItem(AUTO_SYNC_KEY) || 'null');
+    return !!(config && saved?.url === config.url && saved.enabled === true && typeof userId === 'string' && saved.userId === userId);
+  } catch { return false; }
+}
+
+export function setAutomaticSyncEnabled(enabled, userId) {
+  const config = loadSyncConfig();
+  if (!config) throw Error('Save provider settings before enabling automatic sync.');
+  const target = storage('localStorage');
+  if (!target) throw Error('Browser storage is unavailable.');
+  if (!enabled) { target.removeItem(AUTO_SYNC_KEY); return; }
+  if (typeof userId !== 'string' || !userId) throw Error('Sign in to the account you intend to sync before enabling automatic sync.');
+  const cursor = getSyncCursor(userId);
+  if (!cursor) throw Error('Review and sync the local and cloud copies manually before enabling automatic sync.');
+  target.setItem(AUTO_SYNC_KEY, JSON.stringify({ url: config.url, userId, enabled: true }));
+}
+
+export function getSyncCursor(userId) {
+  const config = loadSyncConfig();
+  try {
+    const saved = JSON.parse(storage('localStorage')?.getItem(SYNC_CURSOR_KEY) || 'null');
+    return config && typeof userId === 'string' && saved?.url === config.url && saved.userId === userId && Number.isSafeInteger(saved.revision) && typeof saved.digest === 'string' ? saved : null;
+  } catch { return null; }
+}
+
+function stable(value) {
+  if (Array.isArray(value)) return value.map(stable);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map(key => [key, stable(value[key])]));
+  return value;
+}
+
+export async function workspaceDigest(workspace) {
+  if (!globalThis.crypto?.subtle) throw Error('Secure hashing is unavailable in this browser; automatic sync is disabled.');
+  const { ui, timer, ...plannerData } = workspace || {};
+  const bytes = new TextEncoder().encode(JSON.stringify(stable(plannerData)));
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export async function recordSyncCursor(row, workspace, userId) {
+  const config = loadSyncConfig();
+  const target = storage('localStorage');
+  if (!config || !target || !Number.isSafeInteger(row?.revision) || typeof userId !== 'string' || !userId) return;
+  const digest = await workspaceDigest(workspace);
+  target.setItem(SYNC_CURSOR_KEY, JSON.stringify({ url: config.url, userId, revision: row.revision, digest }));
+  recordSyncSuccess(row.updated_at || new Date().toISOString());
 }
 
 export function clearSyncConfig() {
   storage('localStorage')?.removeItem(CONFIG_KEY);
   storage('localStorage')?.removeItem(LAST_SYNC_KEY);
+  storage('localStorage')?.removeItem(AUTO_SYNC_KEY);
+  storage('localStorage')?.removeItem(SYNC_CURSOR_KEY);
   clearSession();
 }
+export function clearSyncCursor() { storage('localStorage')?.removeItem(SYNC_CURSOR_KEY); }
 
 export function lastSyncAt() {
   try {
@@ -92,6 +155,7 @@ function setSession(reply) {
 
 export function clearSession() { storage('sessionStorage')?.removeItem(SESSION_KEY); }
 export function sessionSnapshot() { return getSession(); }
+export function abortPendingRequests() { for (const controller of pendingControllers) controller.abort(); }
 
 async function request(path, { method = 'GET', body, session, prefer } = {}) {
   const hostname = globalThis.location?.hostname?.toLowerCase() || '';
@@ -103,6 +167,7 @@ async function request(path, { method = 'GET', body, session, prefer } = {}) {
   if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
   if (prefer) headers.Prefer = prefer;
   const controller = new AbortController();
+  pendingControllers.add(controller);
   const timeout = setTimeout(() => controller.abort(), 12000);
   let response;
   try {
@@ -111,18 +176,25 @@ async function request(path, { method = 'GET', body, session, prefer } = {}) {
     const failure = Error(error.name === 'AbortError' ? 'Sync request timed out. Your local planner is unchanged.' : 'Could not reach the sync service. Check the connection; local changes remain on this device.');
     failure.code = error.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK';
     throw failure;
-  } finally { clearTimeout(timeout); }
+  } finally { clearTimeout(timeout); pendingControllers.delete(controller); }
   let payload = null;
   try { payload = await response.json(); } catch { /* empty or non-JSON response */ }
   if (!response.ok) {
     if (response.status === 401) { clearSession(); throw Error('Sign in again to continue syncing.'); }
-    if (response.status === 409) throw Error('The cloud workspace changed during this action. Review sync again before choosing.');
+    if (response.status === 409) { const error = Error('The cloud workspace changed during this action. Review sync again before choosing.'); error.code = 'CONFLICT'; throw error; }
     if (response.status === 413) throw Error('The cloud workspace is larger than the provider accepted. Your local planner is unchanged.');
-    if (response.status === 429) { const error = Error('The sync service is rate limited. Wait a moment and retry.'); error.code = 'RATE_LIMIT'; throw error; }
-    if (response.status >= 500) { const error = Error('The sync service is temporarily unavailable. Your local planner is unchanged.'); error.code = 'SERVER'; throw error; }
+    if (response.status === 429) { const error = Error('The sync service is rate limited. Wait a moment and retry.'); error.code = 'RATE_LIMIT'; error.retryAfterMs = parseRetryAfter(response.headers.get('Retry-After')); throw error; }
+    if (response.status >= 500) { const error = Error('The sync service is temporarily unavailable. Your local planner is unchanged.'); error.code = 'SERVER'; error.retryAfterMs = parseRetryAfter(response.headers.get('Retry-After')); throw error; }
     throw Error('The sync request was rejected. Check the setup steps and database policy.');
   }
   return payload;
+}
+
+function parseRetryAfter(value) {
+  if (!value) return 0;
+  const seconds = Number(value);
+  const milliseconds = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(value) - Date.now();
+  return Math.max(0, Math.min(300000, milliseconds || 0));
 }
 
 export async function signUp(email, password) {

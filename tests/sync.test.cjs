@@ -47,6 +47,35 @@ test('last successful sync is stored per provider without storing credentials', 
   Sync.clearLastSync();
 });
 
+test('automatic sync requires opt-in and a reviewed sync baseline', async () => {
+  Sync.saveSyncConfig({ url: projectUrl, publicKey });
+  assert.equal(Sync.automaticSyncEnabled(session.user.id), false);
+  assert.throws(() => Sync.setAutomaticSyncEnabled(true, session.user.id), /manually/);
+  const workspace = { version: 2, tasks: [{ id: 'a', title: 'Read' }] };
+  const row = { revision: 4, updated_at: '2026-10-28T10:00:00.000Z' };
+  await Sync.recordSyncCursor(row, workspace, session.user.id);
+  assert.equal(Sync.getSyncCursor(session.user.id).revision, 4);
+  Sync.setAutomaticSyncEnabled(true, session.user.id);
+  assert.equal(Sync.automaticSyncEnabled(session.user.id), true);
+  assert.equal(Sync.automaticSyncEnabled('different-user'), false);
+  assert.equal(Sync.getSyncCursor(session.user.id).digest.length, 64);
+  assert.equal(Sync.getSyncCursor('different-user'), null);
+  assert.equal(Sync.getSyncCursor(session.user.id).digest, await Sync.workspaceDigest({ tasks: [{ title: 'Read', id: 'a' }], version: 2 }));
+  assert.equal(await Sync.workspaceDigest({ ...workspace, ui: { page: 'tasks' }, timer: { remaining: 10 } }), await Sync.workspaceDigest({ ...workspace, ui: { page: 'dashboard' }, timer: { remaining: 30 } }));
+  Sync.setAutomaticSyncEnabled(false, session.user.id);
+  assert.equal(Sync.automaticSyncEnabled(session.user.id), false);
+  assert.equal(Sync.getSyncCursor(session.user.id).revision, 4);
+});
+
+test('changing provider clears its sync cursor and disables automatic sync', async () => {
+  Sync.saveSyncConfig({ url: projectUrl, publicKey });
+  await Sync.recordSyncCursor({ revision: 1 }, { version: 2, tasks: [] }, session.user.id);
+  Sync.setAutomaticSyncEnabled(true, session.user.id);
+  Sync.saveSyncConfig({ url: 'https://other-project.supabase.co', publicKey });
+  assert.equal(Sync.automaticSyncEnabled(session.user.id), false);
+  assert.equal(Sync.getSyncCursor(session.user.id), null);
+});
+
 test('public project settings persist while session tokens stay in session storage', async () => {
   Sync.saveSyncConfig({ url: projectUrl, publicKey });
   global.fetch = async () => Response.json({ ...session, expires_in: 3600 });
@@ -143,6 +172,12 @@ test('cloud deletion is restricted to the user and the reviewed revision', async
   assert.match(call.url, /user_id=eq\.user-123/);
   assert.match(call.url, /revision=eq\.9/);
   assert.equal(call.options.method, 'DELETE');
+});
+
+test('rate-limit retry honors a bounded Retry-After value', async () => {
+  Sync.saveSyncConfig({ url: projectUrl, publicKey });
+  global.fetch = async () => new Response(JSON.stringify({ message: 'rate limited' }), { status: 429, headers: { 'Retry-After': '3' } });
+  await assert.rejects(Sync.getCloudWorkspace(session), error => error.code === 'RATE_LIMIT' && error.retryAfterMs === 3000);
 });
 
 test('the migration enforces a user-owned row and bounded workspace payloads', async () => {

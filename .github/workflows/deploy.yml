@@ -33,6 +33,8 @@ jobs:
         run: node --test tests/*.test.cjs
       - name: Build static application
         run: npm run build
+      - name: Check deployable artifacts and credential patterns
+        run: node scripts/check-static-artifacts.mjs
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
         with:

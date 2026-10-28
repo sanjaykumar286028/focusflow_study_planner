@@ -22,3 +22,5 @@ jobs:
         run: node --test tests/*.test.cjs
       - name: Build static application
         run: node scripts/build-static.mjs
+      - name: Check deployable artifacts and credential patterns
+        run: node scripts/check-static-artifacts.mjs
